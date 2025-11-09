@@ -1,0 +1,55 @@
+# --- Dependencies ---
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json # Tùy chọn: Một số team giữ lại file này, một số thì không. Nếu bạn dùng yarn thì bỏ yarn.lock vào đây nếu muốn.
+
+# --- Environment Variables (RẤT QUAN TRỌNG) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE/Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Build Output ---
+dist/
+build/
+coverage/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Security Keys (CỰC KỲ QUAN TRỌNG) ---
+serviceAccountKey.json
+*.pem
+*.key
+*.cert
+
+# --- Testing ---
+/coverage
+
+# --- Expo (Nếu có folder mobile chung) ---
+.expo/
+*.jks
+*.p12
+*.keystore
+!debug.keystore
+
+# --- Backend specific ---
+# Nếu bạn có upload file local
+uploads/
+tmp/
