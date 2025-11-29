@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableWithoutFeedback,
+  View,
   ViewStyle,
 } from "react-native";
 
@@ -20,24 +21,26 @@ export const KeyboardAvoidingContainer: React.FC<
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      enabled
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        {scrollEnabled ? (
-          <ScrollView
-            contentContainerStyle={[styles.scrollContent, style]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-            overScrollMode="never"
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          <>{children}</>
-        )}
-      </TouchableWithoutFeedback>
+      {scrollEnabled ? (
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, style]}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          overScrollMode="auto"
+          nestedScrollEnabled={true}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.container}>{children}</View>
+        </TouchableWithoutFeedback>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -49,5 +52,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    paddingBottom: 80, // Thêm padding bottom để có thể scroll đến cuối khi keyboard mở
   },
 });

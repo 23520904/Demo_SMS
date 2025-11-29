@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
-import { Platform, View } from "react-native";
+import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/constants/colors";
 
 export default function TabsLayout() {
@@ -26,18 +27,18 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home", // Dịch: Trang chủ
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="home" color={color} size={size} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile", // Dịch: Cá nhân
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="user" color={color} size={size} />
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />
@@ -50,18 +51,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-// Simple TabBarIcon component (you can replace with icons library)
-const TabBarIcon = ({ name, color, size }: any) => {
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: color,
-        opacity: 0.3,
-      }}
-    />
-  );
-};

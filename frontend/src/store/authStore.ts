@@ -23,6 +23,10 @@ interface AuthState {
   refreshUserProfile: () => Promise<void>;
 }
 
+// Debounce helper để tránh gọi refreshUserProfile quá nhiều lần
+let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+let isRefreshing = false;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Initial state
   user: null,
@@ -118,13 +122,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // Refresh user profile từ server
+  // Refresh user profile từ server với debounce
   refreshUserProfile: async () => {
-    try {
-      const profile = await userService.getProfile();
-      get().setUser(profile as User);
-    } catch (error) {
-      console.error("Failed to refresh user profile:", error);
+    // Nếu đang refresh, bỏ qua
+    if (isRefreshing) {
+      return;
     }
+
+    // Clear timeout trước đó nếu có
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+    }
+
+    // Debounce: đợi 300ms trước khi thực sự gọi API
+    return new Promise<void>((resolve) => {
+      refreshTimeout = setTimeout(async () => {
+        if (isRefreshing) {
+          resolve();
+          return;
+        }
+
+        isRefreshing = true;
+        try {
+          const profile = await userService.getProfile();
+          get().setUser(profile as User);
+        } catch (error: any) {
+          // Xử lý lỗi 429 (Rate Limit) - không log error để tránh spam
+          if (error?.response?.status === 429) {
+            console.warn(
+              "Rate limit reached for profile refresh. Please wait a moment."
+            );
+            resolve();
+            return;
+          }
+          console.error("Failed to refresh user profile:", error);
+        } finally {
+          isRefreshing = false;
+          resolve();
+        }
+      }, 300);
+    });
   },
 }));

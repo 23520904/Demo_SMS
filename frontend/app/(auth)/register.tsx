@@ -47,9 +47,10 @@ export default function RegisterScreen() {
     if (!phoneNumber.trim()) {
       newErrors.phoneNumber = "Please enter your phone number";
     } else {
-      const formatted = formatPhoneNumber(phoneNumber);
-      if (!/^84[0-9]{9,10}$/.test(formatted)) {
-        newErrors.phoneNumber = "Invalid phone number";
+      // Validate định dạng 0912345678 (10 số, bắt đầu bằng 0)
+      if (!/^0[0-9]{9}$/.test(phoneNumber)) {
+        newErrors.phoneNumber =
+          "Phone number must be 10 digits starting with 0";
       }
     }
 

@@ -1,6 +1,7 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.API_BASE_URL || "http://192.168.1.9:5000/api",
-  TIMEOUT: 10000,
+  BASE_URL:
+    process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.1.9:5000/api",
+  TIMEOUT: Number(process.env.EXPO_PUBLIC_API_TIMEOUT) || 10000,
   COUNTRY_CODE: "84",
 };
 export const TOKEN_CONFIG = {

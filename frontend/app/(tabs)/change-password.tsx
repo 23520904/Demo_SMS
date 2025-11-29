@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { TouchableOpacity, StyleSheet, View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useOTP } from "../../src/hooks/useOTP";
 import { useToast } from "../../src/hooks/useToast";
 import { SUCCESS_MESSAGES } from "../../src/constants/messages";
@@ -7,14 +9,11 @@ import { userService } from "../../src/api/services/user.service";
 import { router } from "expo-router";
 import { SafeAreaContainer } from "../../src/components/layout/SafeAreaContainer";
 import { KeyboardAvoidingContainer } from "../../src/components/layout/KeyboardAvoidingContainer";
-import { StyleSheet, View } from "react-native";
-import { Text } from "react-native";
 import { Button } from "../../src/components/common/Button";
 import { OTPInput } from "../../src/components/common/OTPInput";
 import { Input } from "../../src/components/common/Input";
 import { COLORS } from "../../src/constants/colors";
 import { isAxiosError } from "axios";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function ChangePasswordScreen() {
   const { countdown, canResend, sendChangePasswordOTP } = useOTP();
@@ -107,25 +106,50 @@ export default function ChangePasswordScreen() {
     <SafeAreaContainer>
       <KeyboardAvoidingContainer>
         <View style={styles.header}>
-          <Text style={styles.title}>Change Password</Text>
-          <Text style={styles.subtitle}>
-            {step === "send-otp"
-              ? "Send an OTP code to confirm your password change" // Dịch
-              : "Enter the OTP code and your new password"}
-          </Text>
+          <TouchableOpacity
+            style={styles.backIconButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+
+          <View style={styles.headerContent}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="lock-closed" size={32} color={COLORS.primary} />
+            </View>
+            <Text style={styles.title}>Change Password</Text>
+            <Text style={styles.subtitle}>
+              {step === "send-otp"
+                ? "Send an OTP code to confirm your password change"
+                : "Enter the OTP code and your new password"}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.content}>
           {step === "send-otp" ? (
             <>
               <View style={styles.infoBox}>
-                <Text style={styles.infoText}>
-                  📱 An OTP code will be sent to your phone number
-                </Text>
+                <View style={styles.infoBoxHeader}>
+                  <View style={styles.infoIconContainer}>
+                    <Ionicons
+                      name="phone-portrait-outline"
+                      size={24}
+                      color={COLORS.primary}
+                    />
+                  </View>
+                  <View style={styles.infoBoxContent}>
+                    <Text style={styles.infoTitle}>OTP Verification</Text>
+                    <Text style={styles.infoText}>
+                      An OTP code will be sent to your registered phone number
+                      to verify your identity
+                    </Text>
+                  </View>
+                </View>
               </View>
 
               <Button
-                title="Send OTP Code" // Dịch
+                title="Send OTP Code"
                 onPress={handleSendOTP}
                 loading={isLoading}
                 style={styles.button}
@@ -133,6 +157,24 @@ export default function ChangePasswordScreen() {
             </>
           ) : (
             <>
+              <View style={styles.stepIndicator}>
+                <View style={styles.stepIndicatorItem}>
+                  <View style={[styles.stepDot, styles.stepDotCompleted]}>
+                    <Ionicons name="checkmark" size={16} color="#FFF" />
+                  </View>
+                  <Text style={styles.stepText}>OTP Sent</Text>
+                </View>
+                <View style={styles.stepLine} />
+                <View style={styles.stepIndicatorItem}>
+                  <View style={[styles.stepDot, styles.stepDotActive]}>
+                    <Text style={styles.stepNumber}>2</Text>
+                  </View>
+                  <Text style={[styles.stepText, styles.stepTextActive]}>
+                    Change Password
+                  </Text>
+                </View>
+              </View>
+
               <OTPInput
                 value={otp}
                 onChangeText={(text) => {
@@ -145,50 +187,53 @@ export default function ChangePasswordScreen() {
                 canResend={canResend}
               />
 
-              <Input
-                label="New Password" // Dịch
-                value={newPassword}
-                onChangeText={(text) => {
-                  setNewPassword(text);
-                  setErrors((prev) => ({ ...prev, newPassword: "" }));
-                }}
-                error={errors.newPassword}
-                placeholder="Enter new password" // Dịch
-                secureTextEntry={!showNewPassword}
-                rightIcon={
-                  <Ionicons
-                    name={showNewPassword ? "eye" : "eye-off"}
-                    size={24}
-                    color="gray"
-                  />
-                }
-                onRightIconPress={() => setShowNewPassword(!showNewPassword)}
-              />
+              <View style={styles.passwordSection}>
+                <Text style={styles.sectionTitle}>New Password</Text>
+                <Input
+                  label="New Password"
+                  value={newPassword}
+                  onChangeText={(text) => {
+                    setNewPassword(text);
+                    setErrors((prev) => ({ ...prev, newPassword: "" }));
+                  }}
+                  error={errors.newPassword}
+                  placeholder="Enter new password"
+                  secureTextEntry={!showNewPassword}
+                  rightIcon={
+                    <Ionicons
+                      name={showNewPassword ? "eye" : "eye-off"}
+                      size={24}
+                      color={COLORS.textSecondary}
+                    />
+                  }
+                  onRightIconPress={() => setShowNewPassword(!showNewPassword)}
+                />
 
-              <Input
-                label="Confirm Password" // Dịch
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                }}
-                error={errors.confirmPassword}
-                placeholder="Re-enter new password" // Dịch
-                secureTextEntry={!showConfirmPassword}
-                rightIcon={
-                  <Ionicons
-                    name={showConfirmPassword ? "eye" : "eye-off"}
-                    size={24}
-                    color="gray"
-                  />
-                }
-                onRightIconPress={() =>
-                  setShowConfirmPassword(!showConfirmPassword)
-                }
-              />
+                <Input
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                  }}
+                  error={errors.confirmPassword}
+                  placeholder="Re-enter new password"
+                  secureTextEntry={!showConfirmPassword}
+                  rightIcon={
+                    <Ionicons
+                      name={showConfirmPassword ? "eye" : "eye-off"}
+                      size={24}
+                      color={COLORS.textSecondary}
+                    />
+                  }
+                  onRightIconPress={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                />
+              </View>
 
               <Button
-                title="Change Password" // Dịch
+                title="Change Password"
                 onPress={handleChangePassword}
                 loading={isLoading}
                 disabled={otp.length !== 6}
@@ -197,12 +242,19 @@ export default function ChangePasswordScreen() {
             </>
           )}
 
-          <Button
-            title="Go Back" // Dịch
-            variant="outline"
-            onPress={() => router.back()}
-            style={styles.backButton}
-          />
+          {step === "verify" && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setStep("send-otp")}
+            >
+              <Ionicons
+                name="arrow-back-outline"
+                size={18}
+                color={COLORS.primary}
+              />
+              <Text style={styles.backButtonText}>Back to Send OTP</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingContainer>
     </SafeAreaContainer>
@@ -211,42 +263,149 @@ export default function ChangePasswordScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: 40,
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  backIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerContent: {
+    alignItems: "center",
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: COLORS.text,
     marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    lineHeight: 24,
+    lineHeight: 22,
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
   content: {
     flex: 1,
   },
   infoBox: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  infoBoxHeader: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  infoIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoBoxContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 6,
   },
   infoText: {
     fontSize: 14,
-    color: COLORS.text,
+    color: COLORS.textSecondary,
     lineHeight: 20,
   },
-  eyeIcon: {
-    // Kiểu này không còn được sử dụng vì đã thay bằng Ionicons
-    fontSize: 20,
+  stepIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 32,
+    paddingHorizontal: 20,
+  },
+  stepIndicatorItem: {
+    alignItems: "center",
+    gap: 8,
+  },
+  stepDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  stepDotCompleted: {
+    backgroundColor: COLORS.success,
+  },
+  stepDotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFF",
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 12,
+  },
+  stepText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+  stepTextActive: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  passwordSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 16,
   },
   button: {
-    marginTop: 24,
+    marginTop: 8,
   },
   backButton: {
-    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 20,
+    paddingVertical: 12,
+  },
+  backButtonText: {
+    fontSize: 15,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
 });

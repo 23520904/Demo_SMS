@@ -30,4 +30,12 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req, res) => {
+    // Ưu tiên dùng user ID nếu đã đăng nhập (cho profile endpoint)
+    if (req.user && req.user._id) {
+      return req.user._id.toString();
+    }
+    // Fallback: dùng IP
+    return ipKeyGenerator(req, res);
+  },
 });

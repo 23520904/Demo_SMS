@@ -4,17 +4,19 @@ export const formatPhoneNumber = (phone: string): string => {
   // Loại bỏ tất cả ký tự không phải số
   const cleaned = phone.replace(/\D/g, "");
 
-  // Nếu bắt đầu bằng 0, thay bằng 84
+  // Format: 0912345678 => 84912345678
+  // Thay số 0 đầu tiên bằng 84
   if (cleaned.startsWith("0")) {
     return API_CONFIG.COUNTRY_CODE + cleaned.substring(1);
   }
 
-  // Nếu bắt đầu bằng +84, loại bỏ +
+  // Nếu đã có 84 ở đầu (từ database hoặc đã format), giữ nguyên
   if (cleaned.startsWith("84")) {
     return cleaned;
   }
 
-  // Nếu không có mã quốc gia, thêm vào
+  // Nếu không bắt đầu bằng 0, thêm 84 vào đầu
+  // (trường hợp người dùng nhập thiếu số 0)
   return API_CONFIG.COUNTRY_CODE + cleaned;
 };
 
@@ -28,6 +30,7 @@ export const displayPhoneNumber = (phone: string): string => {
 };
 
 export const validatePhoneFormat = (phone: string): boolean => {
+  // Validate định dạng 0912345678 (10 số, bắt đầu bằng 0)
   const cleaned = phone.replace(/\D/g, "");
-  return /^84[0-9]{9,10}$/.test(cleaned);
+  return /^0[0-9]{9}$/.test(cleaned);
 };

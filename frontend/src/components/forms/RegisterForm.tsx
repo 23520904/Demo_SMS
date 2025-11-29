@@ -51,9 +51,10 @@ export const RegisterForm: React.FC = () => {
     if (!values.phoneNumber.trim()) {
       newErrors.phoneNumber = "Please enter your phone number";
     } else {
-      const formatted = formatPhoneNumber(values.phoneNumber);
-      if (!/^84[0-9]{9,10}$/.test(formatted)) {
-        newErrors.phoneNumber = "Invalid phone number";
+      // Validate định dạng 0912345678 (10 số, bắt đầu bằng 0)
+      if (!/^0[0-9]{9}$/.test(values.phoneNumber)) {
+        newErrors.phoneNumber =
+          "Phone number must be 10 digits starting with 0";
       }
     }
 

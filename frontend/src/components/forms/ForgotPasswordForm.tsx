@@ -21,9 +21,9 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
       setError("Please enter your phone number"); // Dịch
       return false;
     }
-    const formatted = formatPhoneNumber(phoneNumber);
-    if (!/^84[0-9]{9,10}$/.test(formatted)) {
-      setError("Invalid phone number"); // Dịch
+    // Validate định dạng 0912345678 (10 số, bắt đầu bằng 0)
+    if (!/^0[0-9]{9}$/.test(phoneNumber)) {
+      setError("Phone number must be 10 digits starting with 0");
       return false;
     }
     return true;

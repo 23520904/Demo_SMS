@@ -30,6 +30,8 @@ export default function LoginScreen() {
     onSubmit: async (data) => {
       try {
         const formattedPhone = formatPhoneNumber(data.phoneNumber);
+        console.log("Phone: ", formattedPhone);
+        console.log("Password: ", data.password);
         await login(formattedPhone, data.password);
         showSuccess(SUCCESS_MESSAGES.LOGIN_SUCCESS);
       } catch (error) {
@@ -88,7 +90,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={styles.footerText}>Don&apos;t have an account? </Text>
           <Link href="/(auth)/register" asChild>
             <TouchableOpacity>
               <Text style={styles.footerLink}>Register now</Text>

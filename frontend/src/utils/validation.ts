@@ -3,10 +3,7 @@ import { z } from "zod";
 export const phoneSchema = z
   .string()
   .min(1, "Please enter your phone number")
-  .regex(
-    /^[0-9]{9,10}$/,
-    "Phone number must start with 84 and have 11-12 digits"
-  );
+  .regex(/^0[0-9]{9}$/, "Phone number must be 10 digits starting with 0");
 
 // Password validation
 export const passwordSchema = z

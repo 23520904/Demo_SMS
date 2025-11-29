@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { sendInfobipOtp, verifyInfobipOtp } from "../utils/smsService.js";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
+import TokenBlacklist from "../models/tokenBlacklist.model.js";
 dotenv.config();
 
 const MAX_OTP_ATTEMPTS = 5;
@@ -240,12 +241,15 @@ export const refreshToken = async (req, res) => {
       refreshToken,
       process.env.JWT_REFRESH_SECRET
     );
-    const user = await User.findById(userPayload.id);
+    // Hỗ trợ cả userId và id (backward compatible)
+    const userId = userPayload.userId || userPayload.id;
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    // Tạo token mới với userId để nhất quán với middleware
     const newAccessToken = jwt.sign(
-      { id: user._id, phoneNumber: user.phoneNumber },
+      { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );

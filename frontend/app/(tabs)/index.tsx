@@ -5,6 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../src/constants/colors";
 import { useAuthStore } from "../../src/store/authStore";
 import React, { useEffect } from "react";
@@ -13,9 +14,14 @@ import { SafeAreaContainer } from "../../src/components/layout/SafeAreaContainer
 export default function HomeScreen() {
   const { user, refreshUserProfile } = useAuthStore();
   const [refreshing, setRefreshing] = React.useState(false);
+  const hasRefreshed = React.useRef(false);
 
   useEffect(() => {
-    refreshUserProfile();
+    // Chỉ refresh một lần khi component mount
+    if (!hasRefreshed.current) {
+      hasRefreshed.current = true;
+      refreshUserProfile();
+    }
   }, []);
 
   const onRefresh = async () => {
@@ -38,7 +44,10 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🎉 Welcome!</Text>
+          <View style={styles.cardHeader}>
+            <Ionicons name="checkmark-circle" size={32} color="#FFF" />
+            <Text style={styles.cardTitle}>Welcome!</Text>
+          </View>
           <Text style={styles.cardText}>
             You have successfully logged into the SMS Authentication system.
           </Text>
@@ -49,42 +58,47 @@ export default function HomeScreen() {
 
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Full Name:</Text>
-              <Text style={styles.infoValue}>{user?.fullName}</Text>
+              <View style={styles.infoRowLeft}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.infoLabel}>Full Name</Text>
+              </View>
+              <Text style={styles.infoValue}>{user?.fullName || "N/A"}</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Phone Number:</Text>
-              <Text style={styles.infoValue}>{user?.phoneNumber}</Text>
+              <View style={styles.infoRowLeft}>
+                <Ionicons
+                  name="call-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.infoLabel}>Phone Number</Text>
+              </View>
+              <Text style={styles.infoValue}>{user?.phoneNumber || "N/A"}</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Date Created:</Text>
+              <View style={styles.infoRowLeft}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.infoLabel}>Date Created</Text>
+              </View>
               <Text style={styles.infoValue}>
                 {user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString("en-US") // Changed to en-US locale
+                  ? new Date(user.createdAt).toLocaleDateString("en-US")
                   : "N/A"}
               </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
-
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Activities</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>1</Text>
-              <Text style={styles.statLabel}>Account</Text>
             </View>
           </View>
         </View>
@@ -116,11 +130,16 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
   },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#FFF",
-    marginBottom: 8,
   },
   cardText: {
     fontSize: 14,
@@ -148,7 +167,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
+  },
+  infoRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   infoLabel: {
     fontSize: 14,
@@ -162,29 +186,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: COLORS.divider,
-  },
-  statsSection: {
-    marginBottom: 24,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-  },
-  statNumber: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+    marginVertical: 4,
   },
 });
