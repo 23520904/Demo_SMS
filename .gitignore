@@ -10,7 +10,7 @@ package-lock.json # Tùy chọn: Một số team giữ lại file này, một s�
 .env.development.local
 .env.test.local
 .env.production.local
-
+.env
 # --- OS Files ---
 .DS_Store
 Thumbs.db
