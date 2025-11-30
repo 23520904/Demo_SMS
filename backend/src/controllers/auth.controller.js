@@ -4,21 +4,10 @@ import { sendInfobipOtp, verifyInfobipOtp } from "../utils/smsService.js";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
 import TokenBlacklist from "../models/tokenBlacklist.model.js";
+import { generateTokens } from "../utils/generateTokens.js";
 dotenv.config();
 
 const MAX_OTP_ATTEMPTS = 5;
-/**
- * @desc    Hàm tiện ích tạo 2 loại token
- */
-const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-  const refreshToken = jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-  });
-  return { accessToken, refreshToken };
-};
 
 /**
  * @desc    Gửi OTP (Dùng Infobip)

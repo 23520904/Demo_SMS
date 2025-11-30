@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"; // 1. Import thêm useState
 import { useAuthStore } from "../src/store/authStore";
-import { router, Stack, SplashScreen } from "expo-router";
+import { router, Stack, SplashScreen, useSegments } from "expo-router";
 import { StatusBar } from "react-native";
 
 // Giữ cho splash screen hiển thị
@@ -8,6 +8,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
+  const segments = useSegments();
 
   // 2. Thêm state để đảm bảo layout đã render
   const [isLayoutReady, setLayoutReady] = useState(false);
@@ -26,16 +27,28 @@ export default function RootLayout() {
     //    - Auth đã load xong (!isLoading)
     //    - Layout đã mount xong (isLayoutReady)
     if (!isLoading && isLayoutReady) {
+      // Kiểm tra xem có đang ở màn hình verify-otp không (để tránh tự động chuyển về login khi nhập sai OTP)
+      const isOnVerifyOTPScreen = segments.includes("verify-otp");
+      const isOnForgotPasswordScreen = segments.includes("forgot-password");
+      const isOnRegisterScreen = segments.includes("register");
+
+      // Không tự động chuyển về login nếu đang ở các màn hình auth này
+      const shouldSkipAutoRedirect =
+        isOnVerifyOTPScreen || isOnForgotPasswordScreen || isOnRegisterScreen;
+
       if (isAuthenticated) {
         router.replace("/(tabs)");
-      } else {
+      } else if (!shouldSkipAutoRedirect) {
+        // Chỉ chuyển về login nếu không đang ở các màn hình auth đặc biệt
         router.replace("/(auth)/login");
       }
 
       // Ẩn splash screen CHỈ SAU KHI đã điều hướng
-      SplashScreen.hideAsync();
+      if (!shouldSkipAutoRedirect) {
+        SplashScreen.hideAsync();
+      }
     }
-  }, [isAuthenticated, isLoading, isLayoutReady]); // 5. Thêm isLayoutReady
+  }, [isAuthenticated, isLoading, isLayoutReady, segments]); // 5. Thêm isLayoutReady và segments
 
   // 6. Vẫn LUÔN LUÔN trả về Navigator
   return (

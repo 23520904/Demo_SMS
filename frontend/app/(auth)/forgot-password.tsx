@@ -21,6 +21,9 @@ export default function ForgotPasswordScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState({ phoneNumber: "", otp: "" });
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+
+  const MAX_ATTEMPTS = 5; // Số lần thử tối đa (đã được config trong backend)
 
   const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
@@ -44,7 +47,7 @@ export default function ForgotPasswordScreen() {
 
   const handleVerifyOTP = async () => {
     if (otp.length !== 6) {
-      setErrors((prev) => ({ ...prev, otp: "OTP code must be 6 digits long" })); // Dịch
+      setErrors((prev) => ({ ...prev, otp: "OTP code must be 6 digits long" }));
       return;
     }
 
@@ -59,14 +62,58 @@ export default function ForgotPasswordScreen() {
         pathname: "/(auth)/reset-password",
         params: { resetToken },
       });
-    } catch (error) {
-      showError(handleApiError(error));
-      setErrors((prev) => ({ ...prev, otp: "Invalid OTP code" })); // Dịch
+    } catch (error: any) {
+      const errorMessage = handleApiError(error);
+      showError(errorMessage);
+      
+      // Kiểm tra nếu là lỗi "Too many failed attempts"
+      if (errorMessage.toLowerCase().includes("too many failed attempts")) {
+        // Chuyển về màn hình login sau 2 giây
+        setTimeout(() => {
+          router.replace("/(auth)/login");
+        }, 2000);
+        setErrors((prev) => ({ 
+          ...prev, 
+          otp: "Too many failed attempts. Redirecting to login..." 
+        }));
+        return;
+      }
+      
+      // Nếu là lỗi OTP không hợp lệ, tính số lần thử còn lại
+      if (errorMessage.toLowerCase().includes("invalid otp")) {
+        // Tính số lần thử còn lại
+        const currentAttempts = remainingAttempts !== null ? remainingAttempts : MAX_ATTEMPTS;
+        const newAttempts = currentAttempts - 1;
+        const attemptsLeft = newAttempts > 0 ? newAttempts : 0;
+        
+        // Cập nhật state
+        setRemainingAttempts(attemptsLeft);
+        
+        // Hiển thị thông báo
+        if (attemptsLeft > 0) {
+          setErrors((prev) => ({ 
+            ...prev, 
+            otp: `Invalid OTP code. ${attemptsLeft} attempt(s) remaining. Please try again.` 
+          }));
+        } else {
+          setErrors((prev) => ({ 
+            ...prev, 
+            otp: "Invalid OTP code. No attempts remaining." 
+          }));
+        }
+      } else {
+        setErrors((prev) => ({ ...prev, otp: errorMessage }));
+      }
+      
+      setOtp(""); // Tự động xóa OTP cũ để người dùng nhập lại
     }
   };
 
   const handleResendOTP = async () => {
     try {
+      setOtp(""); // Xóa OTP cũ
+      setErrors((prev) => ({ ...prev, otp: "" })); // Xóa lỗi
+      setRemainingAttempts(null); // Reset số lần thử
       const formattedPhone = formatPhoneNumber(phoneNumber);
       await sendOTP(formattedPhone, "reset");
       showSuccess(SUCCESS_MESSAGES.OTP_SENT);
@@ -120,11 +167,17 @@ export default function ForgotPasswordScreen() {
                 canResend={canResend}
               />
 
+              {remainingAttempts !== null && remainingAttempts > 0 && (
+                <Text style={styles.attemptsText}>
+                  {remainingAttempts} attempt(s) remaining
+                </Text>
+              )}
+
               <Button
                 title="Verify"
                 onPress={handleVerifyOTP}
                 loading={isLoading}
-                disabled={otp.length !== 6}
+                disabled={otp.length !== 6 || remainingAttempts === 0}
                 style={styles.button}
               />
             </>
@@ -166,5 +219,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 12,
+  },
+  attemptsText: {
+    fontSize: 14,
+    color: COLORS.warning,
+    textAlign: "center",
+    marginTop: 8,
+    fontWeight: "500",
   },
 });

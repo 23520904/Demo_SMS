@@ -3,7 +3,7 @@ import { COLORS } from "../../src/constants/colors";
 import { Button } from "../../src/components/common/Button";
 import { OTPInput } from "../../src/components/common/OTPInput";
 import { router, useLocalSearchParams } from "expo-router";
-import { useAuth } from "../../src/hooks/useAuth";
+import { useAuthStore } from "../../src/store/authStore";
 import { useOTP } from "../../src/hooks/useOTP";
 import { useToast } from "../../src/hooks/useToast";
 import { useState } from "react";
@@ -17,16 +17,25 @@ export default function VerifyOTPScreen() {
   const params = useLocalSearchParams();
   const { fullName, phoneNumber, password, confirmPassword } = params;
 
-  const { register } = useAuth();
+  // Sử dụng register trực tiếp từ authStore thay vì useAuth để kiểm soát navigation
+  const register = useAuthStore((state) => state.register);
   const [isVerifying, setIsVerifying] = useState(false); // <-- THÊM MỚI: State loading cho nút Verify
   const { sendOTP, countdown, canResend, isLoading } = useOTP();
   const { showSuccess, showError } = useToast();
 
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
+    null
+  );
+
+  const MAX_ATTEMPTS = 5; // Số lần thử tối đa (đã được config trong backend)
 
   const handleResendOTP = async () => {
     try {
+      setOtp(""); // Xóa OTP cũ
+      setError(""); // Xóa lỗi
+      setRemainingAttempts(null); // Reset số lần thử
       await sendOTP(phoneNumber as string, "register");
       showSuccess(SUCCESS_MESSAGES.OTP_SENT);
     } catch (err) {
@@ -36,12 +45,12 @@ export default function VerifyOTPScreen() {
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
-      setError("OTP code must be 6 digits long"); // Dịch
-
+      setError("OTP code must be 6 digits long");
       return;
     }
-    setIsVerifying(true); // <-- THÊM MỚI: Bắt đầu loading
-    setError(""); // Xóa lỗi cũ
+    setIsVerifying(true);
+    setError("");
+
     try {
       await register({
         fullName: fullName as string,
@@ -50,14 +59,81 @@ export default function VerifyOTPScreen() {
         confirmPassword: confirmPassword as string,
         otp,
       });
+      // Nếu register thành công, chuyển về tabs
       showSuccess(SUCCESS_MESSAGES.REGISTER_SUCCESS);
-    } catch (err) {
-      showError(handleApiError(err));
-      setError("Invalid OTP code. Please try again"); // Dịch
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      // Lấy message trực tiếp từ backend response
+      const backendMessage = err?.response?.data?.message || "";
+      const errorMessage = handleApiError(err);
+      const statusCode = err?.response?.status;
 
-      setOtp(""); // <-- THÊM MỚI: Tự động xóa OTP cũ để người dùng nhập lại
+      // Debug: Log để kiểm tra (có thể xóa sau)
+      console.log("Register error:", {
+        backendMessage,
+        errorMessage,
+        status: statusCode,
+        fullError: err,
+      });
+
+      // Kiểm tra chính xác message từ backend (ưu tiên message từ response)
+      const messageToCheck = (backendMessage || errorMessage).toLowerCase();
+
+      // CHỈ chuyển về login khi backend thực sự trả về "too many failed attempts"
+      // Backend trả về: "Invalid OTP. Too many failed attempts." khi đã hết số lần thử
+      const isTooManyAttempts = messageToCheck.includes(
+        "too many failed attempts"
+      );
+
+      if (isTooManyAttempts) {
+        // Chỉ khi thực sự hết số lần thử mới chuyển về login
+        const redirectMessage =
+          "Too many failed attempts. Redirecting to login...";
+        setError(redirectMessage);
+        showError(redirectMessage);
+        // Chuyển về màn hình login sau 2 giây
+        setTimeout(() => {
+          router.replace("/(auth)/login");
+        }, 2000);
+        return;
+      }
+
+      // Nếu là lỗi OTP không hợp lệ (nhưng chưa hết số lần thử)
+      // Backend trả về: "Invalid OTP." khi còn số lần thử
+      const isInvalidOtp =
+        messageToCheck.includes("invalid otp") && !isTooManyAttempts;
+
+      if (isInvalidOtp) {
+        // Tính số lần thử còn lại
+        const currentAttempts =
+          remainingAttempts !== null ? remainingAttempts : MAX_ATTEMPTS;
+        const newAttempts = currentAttempts - 1;
+        const attemptsLeft = newAttempts > 0 ? newAttempts : 0;
+
+        // Cập nhật state
+        setRemainingAttempts(attemptsLeft);
+
+        // Hiển thị thông báo
+        if (attemptsLeft > 0) {
+          const message = `Invalid OTP code. ${attemptsLeft} attempt(s) remaining. Please try again.`;
+          setError(message);
+          showError(message);
+        } else {
+          const message = "Invalid OTP code. No attempts remaining.";
+          setError(message);
+          showError(message);
+        }
+
+        setOtp(""); // Tự động xóa OTP cũ để người dùng nhập lại
+        // KHÔNG chuyển về login ở đây - chỉ khi backend báo "too many failed attempts"
+      } else {
+        // Các lỗi khác (OTP expired, không tìm thấy OTP, validation errors, etc.)
+        setError(errorMessage);
+        showError(errorMessage);
+        // KHÔNG chuyển về login cho các lỗi khác
+      }
     } finally {
-      setIsVerifying(false); // <-- THÊM MỚI: Dừng loading (dù thành công hay thất bại)
+      setIsVerifying(false);
     }
   };
 
@@ -87,11 +163,17 @@ export default function VerifyOTPScreen() {
             canResend={canResend}
           />
 
+          {remainingAttempts !== null && remainingAttempts > 0 && (
+            <Text style={styles.attemptsText}>
+              {remainingAttempts} attempt(s) remaining
+            </Text>
+          )}
+
           <Button
             title="Verify"
             onPress={handleVerify}
-            loading={isLoading}
-            disabled={otp.length !== 6}
+            loading={isVerifying || isLoading}
+            disabled={otp.length !== 6 || remainingAttempts === 0}
             style={styles.button}
           />
 
@@ -133,5 +215,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 12,
+  },
+  attemptsText: {
+    fontSize: 14,
+    color: COLORS.warning,
+    textAlign: "center",
+    marginTop: 8,
+    fontWeight: "500",
   },
 });
