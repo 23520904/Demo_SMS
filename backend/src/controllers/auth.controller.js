@@ -16,6 +16,9 @@ const MAX_OTP_ATTEMPTS = 5;
 export const sendOtp = async (req, res) => {
   try {
     const { phoneNumber, type } = req.body;
+    console.log("=== SEND OTP REQUEST ===");
+    console.log("Request body - phoneNumber:", phoneNumber, "type:", type);
+    
     if (!phoneNumber || !type) {
       return res
         .status(400)
@@ -36,8 +39,12 @@ export const sendOtp = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
+    console.log("Calling sendInfobipOtp with phoneNumber:", phoneNumber);
     const pinId = await sendInfobipOtp(phoneNumber);
+    console.log("Received pinId from Infobip:", pinId);
+    
     if (!pinId) {
+      console.error("Failed to get pinId from Infobip");
       return res
         .status(500)
         .json({ message: "Failed to send OTP via Infobip." });
@@ -47,14 +54,24 @@ export const sendOtp = async (req, res) => {
       Date.now() + parseInt(process.env.OTP_EXPIRE_MINUTES, 10) * 60 * 1000
     );
 
-    await Otp.deleteMany({ phoneNumber, type }); // Xóa các pinId cũ
+    console.log("Deleting old OTP records for phoneNumber:", phoneNumber, "type:", type);
+    const deleteResult = await Otp.deleteMany({ phoneNumber, type }); // Xóa các pinId cũ
+    console.log("Deleted old OTP records count:", deleteResult.deletedCount);
 
-    await Otp.create({
+    const newOtpDoc = await Otp.create({
       phoneNumber,
       pinId,
       type,
       expiresAt,
     });
+    console.log("=== OTP SAVED TO DB ===");
+    console.log("OTP Document ID:", newOtpDoc._id);
+    console.log("pinId:", newOtpDoc.pinId);
+    console.log("phoneNumber:", newOtpDoc.phoneNumber);
+    console.log("type:", newOtpDoc.type);
+    console.log("expiresAt:", newOtpDoc.expiresAt);
+    console.log("========================");
+    
     return res.status(200).json({
       message: `OTP sent successfully. It will expire in ${process.env.OTP_EXPIRE_MINUTES} minutes.`,
     });
@@ -91,6 +108,9 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "Phone number already exists." });
     }
+    console.log("=== REGISTER - VERIFY OTP ===");
+    console.log("Request body - phoneNumber:", phoneNumber, "otp:", otp);
+    
     const otpDoc = await Otp.findOne({
       phoneNumber,
       type: "register",
@@ -98,16 +118,33 @@ export const register = async (req, res) => {
     });
 
     if (!otpDoc) {
+      console.log("No OTP document found or expired for phoneNumber:", phoneNumber, "type: register");
       return res
         .status(400)
         .json({ message: "No pending OTP found or OTP has expired." });
     }
-
+    
+    console.log("=== OTP DOCUMENT FOUND ===");
+    console.log("OTP Document ID:", otpDoc._id);
+    console.log("pinId from DB:", otpDoc.pinId);
+    console.log("pin (OTP code) from request:", otp);
+    console.log("phoneNumber:", otpDoc.phoneNumber);
+    console.log("type:", otpDoc.type);
+    console.log("attemptCount:", otpDoc.attemptCount);
+    console.log("expiresAt:", otpDoc.expiresAt);
+    console.log("Current time:", new Date());
+    console.log("===========================");
+    
+    console.log("Calling verifyInfobipOtp with pinId:", otpDoc.pinId, "pin:", otp);
     const isVerified = await verifyInfobipOtp(otpDoc.pinId, otp);
+    console.log("Verification result from Infobip:", isVerified);
 
     if (!isVerified) {
+      console.log("OTP verification FAILED");
       otpDoc.attemptCount++;
+      console.log("Updated attemptCount:", otpDoc.attemptCount);
       if (otpDoc.attemptCount >= MAX_OTP_ATTEMPTS) {
+        console.log("Max attempts reached, deleting OTP document");
         await Otp.deleteOne({ _id: otpDoc._id }); // Xóa nếu sai quá nhiều
         return res
           .status(400)
@@ -116,6 +153,8 @@ export const register = async (req, res) => {
       await otpDoc.save();
       return res.status(400).json({ message: "Invalid OTP." });
     }
+    
+    console.log("OTP verification SUCCESS");
 
     const newUser = new User({ fullName, phoneNumber, password });
     await newUser.save();
@@ -280,6 +319,9 @@ export const logout = async (req, res) => {
 export const verifyResetOtp = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
+    
+    console.log("=== VERIFY RESET OTP REQUEST ===");
+    console.log("Request body - phoneNumber:", phoneNumber, "otp:", otp);
 
     // 1. Tìm Otp document (để lấy pinId)
     const otpDoc = await Otp.findOne({
@@ -289,18 +331,35 @@ export const verifyResetOtp = async (req, res) => {
     });
 
     if (!otpDoc) {
+      console.log("No OTP document found or expired for phoneNumber:", phoneNumber, "type: reset");
       return res
         .status(400)
         .json({ message: "No pending OTP found or OTP has expired." });
     }
 
+    console.log("=== OTP DOCUMENT FOUND ===");
+    console.log("OTP Document ID:", otpDoc._id);
+    console.log("pinId from DB:", otpDoc.pinId);
+    console.log("pin (OTP code) from request:", otp);
+    console.log("phoneNumber:", otpDoc.phoneNumber);
+    console.log("type:", otpDoc.type);
+    console.log("attemptCount:", otpDoc.attemptCount);
+    console.log("expiresAt:", otpDoc.expiresAt);
+    console.log("Current time:", new Date());
+    console.log("===========================");
+
     // 2. Gọi Infobip để xác thực
+    console.log("Calling verifyInfobipOtp with pinId:", otpDoc.pinId, "pin:", otp);
     const isVerified = await verifyInfobipOtp(otpDoc.pinId, otp);
+    console.log("Verification result from Infobip:", isVerified);
 
     if (!isVerified) {
+      console.log("OTP verification FAILED");
       // (Logic thử sai)
       otpDoc.attemptCount++;
+      console.log("Updated attemptCount:", otpDoc.attemptCount);
       if (otpDoc.attemptCount >= MAX_OTP_ATTEMPTS) {
+        console.log("Max attempts reached, deleting OTP document");
         await Otp.deleteOne({ _id: otpDoc._id });
         return res
           .status(400)
@@ -309,6 +368,8 @@ export const verifyResetOtp = async (req, res) => {
       await otpDoc.save();
       return res.status(400).json({ message: "Invalid OTP." });
     }
+    
+    console.log("OTP verification SUCCESS");
 
     // 3. OTP ĐÚNG -> Tìm user
     const user = await User.findOne({ phoneNumber });

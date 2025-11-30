@@ -1,56 +1,73 @@
-import { useEffect, useState } from "react"; // 1. Import thêm useState
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../src/store/authStore";
 import { router, Stack, SplashScreen, useSegments } from "expo-router";
 import { StatusBar } from "react-native";
 
-// Giữ cho splash screen hiển thị
+// Giữ cho splash screen hiển thị cho đến khi xử lý xong logic
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
   const segments = useSegments();
 
-  // 2. Thêm state để đảm bảo layout đã render
+  // State để đảm bảo layout đã render xong
   const [isLayoutReady, setLayoutReady] = useState(false);
 
   useEffect(() => {
     loadStoredAuth();
-  }, []);
+  }, [loadStoredAuth]);
 
-  // 3. Effect này chỉ chạy MỘT LẦN để xác nhận layout đã mount
   useEffect(() => {
     setLayoutReady(true);
   }, []);
 
   useEffect(() => {
-    // 4. Chỉ điều hướng khi CẢ HAI ĐIỀU KIỆN đều đúng:
-    //    - Auth đã load xong (!isLoading)
-    //    - Layout đã mount xong (isLayoutReady)
+    // Chỉ chạy logic khi Auth đã load xong VÀ Layout đã sẵn sàng
     if (!isLoading && isLayoutReady) {
-      // Kiểm tra xem có đang ở màn hình verify-otp không (để tránh tự động chuyển về login khi nhập sai OTP)
-      const isOnVerifyOTPScreen = segments.includes("verify-otp");
-      const isOnForgotPasswordScreen = segments.includes("forgot-password");
-      const isOnRegisterScreen = segments.includes("register");
+      const inTabsGroup = segments[0] === "(tabs)";
+      const inAuthGroup = segments[0] === "(auth)";
 
-      // Không tự động chuyển về login nếu đang ở các màn hình auth này
-      const shouldSkipAutoRedirect =
-        isOnVerifyOTPScreen || isOnForgotPasswordScreen || isOnRegisterScreen;
+      // --- PHẦN QUAN TRỌNG ĐÃ SỬA ---
+      // Kiểm tra tất cả các màn hình trong luồng Auth để tránh bị đá về Login
+      // Dựa trên hình ảnh bạn gửi:
+      const isOnVerifyOTPScreen = segments.includes("verify-otp" as never);
+      const isOnForgotPasswordScreen = segments.includes(
+        "forgot-password" as never
+      );
+      const isOnRegisterScreen = segments.includes("register" as never);
+      const isOnResetPasswordScreen = segments.includes(
+        "reset-password" as never
+      ); // Đã thêm cái này
+      const isOnLoginScreen = segments.includes("login" as never);
+
+      // Gom tất cả lại: Nếu đang ở bất kỳ trang nào thuộc nhóm này thì KHÔNG tự động chuyển về login
+      const isAuthFlow =
+        isOnVerifyOTPScreen ||
+        isOnForgotPasswordScreen ||
+        isOnRegisterScreen ||
+        isOnResetPasswordScreen ||
+        isOnLoginScreen ||
+        inAuthGroup; // Thêm check group cho chắc chắn
 
       if (isAuthenticated) {
-        router.replace("/(tabs)");
-      } else if (!shouldSkipAutoRedirect) {
-        // Chỉ chuyển về login nếu không đang ở các màn hình auth đặc biệt
-        router.replace("/(auth)/login");
+        // Logic 1: Nếu đã đăng nhập -> Vào Tabs
+        // KÈM ĐIỀU KIỆN: Chỉ chuyển nếu chưa ở trong Tabs (để tránh vòng lặp đơ app)
+        if (!inTabsGroup) {
+          router.replace("/(tabs)");
+        }
+      } else {
+        // Logic 2: Nếu chưa đăng nhập
+        // Chỉ chuyển về Login nếu người dùng KHÔNG đang ở trong các màn hình Auth (như reset, forgot, register...)
+        if (!isAuthFlow) {
+          router.replace("/(auth)/login");
+        }
       }
 
-      // Ẩn splash screen CHỈ SAU KHI đã điều hướng
-      if (!shouldSkipAutoRedirect) {
-        SplashScreen.hideAsync();
-      }
+      // Ẩn splash screen sau khi logic điều hướng đã chốt
+      SplashScreen.hideAsync();
     }
-  }, [isAuthenticated, isLoading, isLayoutReady, segments]); // 5. Thêm isLayoutReady và segments
+  }, [isAuthenticated, isLoading, isLayoutReady, segments]);
 
-  // 6. Vẫn LUÔN LUÔN trả về Navigator
   return (
     <>
       <StatusBar barStyle="dark-content" />

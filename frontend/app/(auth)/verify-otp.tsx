@@ -12,13 +12,13 @@ import { handleApiError } from "../../src/utils/errorHandler";
 import { SafeAreaContainer } from "../../src/components/layout/SafeAreaContainer";
 import { KeyboardAvoidingContainer } from "../../src/components/layout/KeyboardAvoidingContainer";
 import { displayPhoneNumber } from "../../src/utils/formatPhone";
-
+import { useAuth } from "../../src/hooks/useAuth";
 export default function VerifyOTPScreen() {
   const params = useLocalSearchParams();
   const { fullName, phoneNumber, password, confirmPassword } = params;
 
   // Sử dụng register trực tiếp từ authStore thay vì useAuth để kiểm soát navigation
-  const register = useAuthStore((state) => state.register);
+  const { register } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false); // <-- THÊM MỚI: State loading cho nút Verify
   const { sendOTP, countdown, canResend, isLoading } = useOTP();
   const { showSuccess, showError } = useToast();

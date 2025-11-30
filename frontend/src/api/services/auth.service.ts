@@ -18,28 +18,42 @@ import { ENDPOINTS } from "../endpoints";
 export const authService = {
   // Gửi OTP
   async sendOTP(data: SendOTPData): Promise<OTPResponse> {
+    console.log("=== FRONTEND: SEND OTP REQUEST ===");
     console.log("endpoint:", ENDPOINTS.AUTH.SEND_OTP);
     console.log("Base URL:", API_CONFIG.BASE_URL);
+    console.log("Request data:", JSON.stringify(data, null, 2));
     const response = await api.post<OTPResponse>(ENDPOINTS.AUTH.SEND_OTP, data);
+    console.log("Response:", JSON.stringify(response.data, null, 2));
+    console.log("===================================");
 
     return response.data;
   },
 
   // Verify OTP (cho reset password)
   async verifyOTP(data: VerifyOTPData): Promise<ResetTokenResponse> {
+    console.log("=== FRONTEND: VERIFY OTP REQUEST ===");
+    console.log("endpoint:", ENDPOINTS.AUTH.VERIFY_OTP);
+    console.log("Request data:", JSON.stringify(data, null, 2));
     const response = await api.post<ResetTokenResponse>(
       ENDPOINTS.AUTH.VERIFY_OTP,
       data
     );
+    console.log("Response:", JSON.stringify(response.data, null, 2));
+    console.log("====================================");
     return response.data;
   },
 
   // Đăng ký
   async register(data: RegisterData): Promise<AuthResponse> {
+    console.log("=== FRONTEND: REGISTER REQUEST ===");
+    console.log("endpoint:", ENDPOINTS.AUTH.REGISTER);
+    console.log("Request data:", JSON.stringify({ ...data, password: "***", confirmPassword: "***", otp: data.otp }, null, 2));
     const response = await api.post<AuthResponse>(
       ENDPOINTS.AUTH.REGISTER,
       data
     );
+    console.log("Response:", JSON.stringify(response.data, null, 2));
+    console.log("===================================");
     return response.data;
   },
 

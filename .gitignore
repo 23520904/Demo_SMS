@@ -5,7 +5,7 @@ yarn-error.log
 package-lock.json # Tùy chọn: Một số team giữ lại file này, một số thì không. Nếu bạn dùng yarn thì bỏ yarn.lock vào đây nếu muốn.
 
 # --- Environment Variables (RẤT QUAN TRỌNG) ---
-
+.env
 .env.local
 .env.development.local
 .env.test.local
